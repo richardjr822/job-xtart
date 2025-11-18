@@ -53,14 +53,30 @@ const navLinks: NavLink[] = [
 ];
 
 export default function Header() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check localStorage first, then fall back to checking the document
+    if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('darkMode');
+      if (savedMode !== null) {
+        return JSON.parse(savedMode);
+      }
+      return document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+    }
+    return false;
+  });
+
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    document.documentElement.classList.toggle("dark", isDarkMode);
     document.body.classList.toggle("dark", isDarkMode);
+    // Save to localStorage
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
   const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
+    setIsDarkMode((prev: boolean) => !prev);
   };
 
   return (
@@ -77,7 +93,7 @@ export default function Header() {
           className={styles.themeToggle}
           aria-label="Toggle dark mode"
         >
-          {isDarkMode ? <SunIcon /> : <MoonIcon />}
+          {mounted && (isDarkMode ? <SunIcon /> : <MoonIcon />)}
         </button>
 
         <Button 

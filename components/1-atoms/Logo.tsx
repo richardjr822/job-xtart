@@ -12,7 +12,7 @@ export interface LogoProps {
 export default function Logo({ href = '/', size = 30, showText = true, className = '' }: LogoProps) {
   const content = (
     <div className={`flex items-center gap-2 ${className}`}>
-      <Image src="/logo.jpg" alt="JobStart Logo" width={size} height={size} priority className="rounded" />
+      <Image src="/logo.png" alt="JobStart Logo" width={size} height={size} priority className="rounded" />
       {showText && <span className="text-lg font-bold">Job Start</span>}
     </div>
   );

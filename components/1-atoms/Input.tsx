@@ -1,4 +1,5 @@
 import React, { InputHTMLAttributes, forwardRef } from 'react';
+import styles from '@/app/forms.module.css';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -28,17 +29,18 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const hasError = !!error;
 
     const baseStyles =
-      'px-4 py-3 border rounded-lg transition-all outline-none focus:ring-2 focus:border-transparent text-black bg-white';
+      'px-4 py-3 border rounded-lg transition-all outline-none focus:ring-2 focus:border-transparent';
+    const darkModeStyles = 'text-black dark:text-white bg-white dark:bg-gray-700 border-blue-200 dark:border-gray-600 dark:bg-[var(--page-bg)] dark:text-[var(--text-color)]';
     const errorStyles = hasError
       ? 'border-red-500 focus:ring-red-500'
-      : 'border-blue-200 focus:ring-blue-500';
+      : 'border-blue-200 dark:border-gray-600 focus:ring-blue-500';
     const widthStyle = fullWidth ? 'w-full' : '';
     const paddingStyles = `${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''}`;
 
     return (
       <div className={`${fullWidth ? 'w-full' : ''}`}>
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-blue-900 mb-1">
+          <label htmlFor={inputId} className={`${styles.label} mb-1`}>
             {label}
           </label>
         )}
@@ -51,7 +53,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`${baseStyles} ${errorStyles} ${widthStyle} ${paddingStyles} ${className}`}
+            className={`${baseStyles} ${darkModeStyles} ${errorStyles} ${widthStyle} ${paddingStyles} ${className}`}
+            style={{
+              backgroundColor: 'var(--page-bg)',
+              color: 'var(--text-color)',
+              borderColor: hasError ? undefined : 'var(--border-color)'
+            }}
             {...props}
           />
           {rightIcon && (
