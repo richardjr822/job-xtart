@@ -1,121 +1,115 @@
-"use client";
+'use client';
 
-import { useState, ChangeEvent, FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useAuthRequest } from "@/hooks/useAuthRequest";
-import styles from "../../forms.module.css";
+import { useState, ChangeEvent, FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/context';
 import Header from '@/components/3-organisms/Header';
+import Button from '@/components/1-atoms/Button';
+import Input from '@/components/1-atoms/Input';
+import styles from '../../forms.module.css';
 
-// -------------------- Types --------------------
-interface LoginForm {
+type LoginForm = {
   email: string;
   password: string;
-}
+};
 
-interface FormErrors {
-  email?: string[];
-  password?: string[];
-  [key: string]: string[] | undefined;
-}
+type LoginResponse = {
+  user: {
+    id: string;
+    email: string;
+    role: 'seeker' | 'poster';
+  };
+};
 
-interface ApiError {
+type ApiError = {
   status?: number;
   message?: string;
-  data?: {
-    errors?: FormErrors;
-  };
-}
+};
 
 export default function LoginPage() {
-  const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [generalError, setGeneralError] = useState<string>("");
-
-  const { login, isLoading } = useAuthRequest();
+  const [form, setForm] = useState<LoginForm>({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { setUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl');
 
-  // Typed onChange
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setError('');
   };
 
-  // Typed submit
+  const getRedirectPath = (role: 'seeker' | 'poster') => {
+    if (callbackUrl && !callbackUrl.startsWith('/auth')) {
+      return callbackUrl;
+    }
+    return role === 'poster' ? '/dashboard/poster' : '/dashboard/seeker';
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-    setFormErrors({});
-    setGeneralError("");
-
-    try {
-      await login(form);
-      router.push("/jobs");
-    } catch (err) {
-      const error = err as ApiError;
-
-      if (error.status === 400 && error.data?.errors) {
-        setFormErrors(error.data.errors);
-      } else {
-        setGeneralError(error.message || "An unknown login error occurred");
-      }
-    }
+    // Frontend-only: simulate login
+    setTimeout(() => {
+      const mockUser = {
+        id: 'user-1',
+        email: form.email,
+        role: 'seeker' as const,
+      };
+      setUser(mockUser);
+      setIsLoading(false);
+      router.push(getRedirectPath(mockUser.role));
+    }, 500);
   };
 
   return (
     <>
       <Header />
-
       <div className={styles.formContainer}>
         <div className={styles.formBox}>
           <h1 className={styles.title}>Welcome Back</h1>
+          <p className={styles.subtitle}>Sign in to continue to your dashboard</p>
 
           <form className={styles.form} onSubmit={handleSubmit}>
-            {/* Email */}
-            <div className={styles.formGroup}>
-              <label htmlFor="email" className={styles.label}>Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                className={styles.input}
-                value={form.email}
-                onChange={handleChange}
-                required
-              />
-              {formErrors.email && (
-                <p className={styles.error}>{formErrors.email[0]}</p>
-              )}
-            </div>
+            <Input
+              label="Email Address"
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange}
+              required
+              fullWidth
+            />
 
-            {/* Password */}
-            <div className={styles.formGroup}>
-              <label htmlFor="password" className={styles.label}>Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                className={styles.input}
-                value={form.password}
-                onChange={handleChange}
-                required
-              />
-              {formErrors.password && (
-                <p className={styles.error}>{formErrors.password[0]}</p>
-              )}
-            </div>
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              placeholder="Enter your password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              fullWidth
+            />
 
-            {/* Error */}
-            {generalError && <p className={styles.error}>{generalError}</p>}
+            {error && (
+              <div className="p-3 bg-[var(--danger-light)] border border-[var(--danger)] rounded-[var(--radius-md)] text-[var(--danger)] text-sm">
+                {error}
+              </div>
+            )}
 
-            {/* Button */}
-            <button type="submit" className={styles.button} disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Login"}
-            </button>
+            <Button type="submit" variant="primary" fullWidth isLoading={isLoading}>
+              Sign In
+            </Button>
           </form>
 
           <p className={styles.link}>
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/signup">Sign Up</Link>
+            Don&apos;t have an account? <Link href="/auth/signup">Create one</Link>
           </p>
         </div>
       </div>

@@ -1,11 +1,10 @@
-import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Providers from '@/components/Providers';
+import { defaultMetadata, viewport as defaultViewport } from '@/lib/seo';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'Job Start',
-  description: 'Find flexible work in your community.',
-};
+export const metadata = defaultMetadata;
+export const viewport = defaultViewport;
 
 type RootLayoutProps = {
   children: ReactNode;
@@ -13,8 +12,14 @@ type RootLayoutProps = {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+      </head>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

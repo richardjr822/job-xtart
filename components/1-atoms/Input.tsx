@@ -1,74 +1,74 @@
-import React, { InputHTMLAttributes, forwardRef } from 'react';
-import styles from '@/app/forms.module.css';
+import { InputHTMLAttributes, forwardRef, ReactNode } from 'react';
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   error?: string;
   helperText?: string;
   fullWidth?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-}
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+};
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      error,
-      helperText,
-      fullWidth = false,
-      leftIcon,
-      rightIcon,
-      className = '',
-      id,
-      ...props
-    },
-    ref
-  ) => {
+  ({ label, error, helperText, fullWidth = false, leftIcon, rightIcon, className = '', id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
     const hasError = !!error;
 
-    const baseStyles =
-      'px-4 py-3 border rounded-lg transition-all outline-none focus:ring-2 focus:border-transparent';
-    const darkModeStyles = 'text-black dark:text-white bg-white dark:bg-gray-700 border-blue-200 dark:border-gray-600 dark:bg-[var(--page-bg)] dark:text-[var(--text-color)]';
-    const errorStyles = hasError
-      ? 'border-red-500 focus:ring-red-500'
-      : 'border-blue-200 dark:border-gray-600 focus:ring-blue-500';
-    const widthStyle = fullWidth ? 'w-full' : '';
-    const paddingStyles = `${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''}`;
+    const containerClass = fullWidth ? 'w-full' : '';
+
+    const inputClasses = [
+      'w-full px-4 py-3 rounded-[var(--radius-md)]',
+      'bg-[var(--page-bg)] text-[var(--text-color)]',
+      'border-[1.5px] transition-all duration-200',
+      'placeholder:text-[var(--text-muted)]',
+      'focus:outline-none focus:ring-3',
+      hasError
+        ? 'border-[var(--danger)] focus:border-[var(--danger)] focus:ring-[var(--danger-light)]'
+        : 'border-[var(--border-color)] hover:border-[var(--border-hover)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]',
+      leftIcon ? 'pl-11' : '',
+      rightIcon ? 'pr-11' : '',
+      className,
+    ].filter(Boolean).join(' ');
 
     return (
-      <div className={`${fullWidth ? 'w-full' : ''}`}>
+      <div className={containerClass}>
         {label && (
-          <label htmlFor={inputId} className={`${styles.label} mb-1`}>
+          <label
+            htmlFor={inputId}
+            className="block mb-2 text-sm font-semibold text-[var(--text-color)]"
+          >
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
               {leftIcon}
             </div>
           )}
           <input
             ref={ref}
             id={inputId}
-            className={`${baseStyles} ${darkModeStyles} ${errorStyles} ${widthStyle} ${paddingStyles} ${className}`}
-            style={{
-              backgroundColor: 'var(--page-bg)',
-              color: 'var(--text-color)',
-              borderColor: hasError ? undefined : 'var(--border-color)'
-            }}
+            className={inputClasses}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
               {rightIcon}
             </div>
           )}
         </div>
-        {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-        {helperText && !error && <p className="mt-1 text-xs text-gray-500">{helperText}</p>}
+        {error && (
+          <p className="mt-1.5 text-sm text-[var(--danger)] flex items-center gap-1">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </p>
+        )}
+        {helperText && !error && (
+          <p className="mt-1.5 text-sm text-[var(--text-muted)]">{helperText}</p>
+        )}
       </div>
     );
   }

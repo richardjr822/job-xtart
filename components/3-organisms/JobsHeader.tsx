@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Logo from '../1-atoms/Logo';
-import NavLinks, { NavLink } from '../2-molecules/NavLinks';
 import Button from '../1-atoms/Button';
 import styles from './page.module.css';
 import { useRouter } from 'next/navigation';
-import { useAuthRequest } from '@/hooks/useAuthRequest';
+import { useAuth } from '@/context';
 
 const MoonIcon = () => (
   <svg
@@ -55,7 +54,6 @@ export interface JobsHeaderProps {
 
 export default function JobsHeader({ activeTab, onTabChange }: JobsHeaderProps) {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first, then fall back to checking the document
     if (typeof document !== 'undefined' && typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('darkMode');
       if (savedMode !== null) {
@@ -67,14 +65,13 @@ export default function JobsHeader({ activeTab, onTabChange }: JobsHeaderProps) 
   });
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { logout } = useAuthRequest();
+  const { logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
     document.documentElement.classList.toggle("dark", isDarkMode);
     document.body.classList.toggle("dark", isDarkMode);
-    // Save to localStorage
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
@@ -83,19 +80,9 @@ export default function JobsHeader({ activeTab, onTabChange }: JobsHeaderProps) 
   };
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      setShowLogoutModal(false);
-      router.push('/auth/login');
-    } catch (err) {
-      alert('Logout failed.');
-    }
+    setShowLogoutModal(false);
+    await logout();
   };
-
-  const jobNavLinks: NavLink[] = [
-    { label: 'Post Job', href: '#' },
-    { label: 'My Posts', href: '#' },
-  ];
 
   return (
     <>

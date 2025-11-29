@@ -25,7 +25,6 @@ export default function JobsPageTemplate({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div className="text-center md:text-left">
             <h1 className="text-4xl font-bold text-blue-900 mb-2">{title}</h1>
@@ -34,14 +33,12 @@ export default function JobsPageTemplate({
           {headerActions && <div className="flex justify-center md:justify-end">{headerActions}</div>}
         </div>
 
-        {/* Search Section */}
         {showSearch && onSearch && (
           <div className="mb-8 flex justify-center">
             <SearchForm onSearch={onSearch} placeholder={searchPlaceholder} />
           </div>
         )}
 
-        {/* Main Content */}
         <div>{children}</div>
       </div>
     </div>

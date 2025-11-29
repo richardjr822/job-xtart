@@ -1,14 +1,22 @@
-/**
- * Constants for user roles.
- */
 export const USER_ROLES = {
-  JOB_SEEKER: 'seeker',
-  JOB_POSTER: 'poster',
-};
+  SEEKER: 'seeker',
+  POSTER: 'poster',
+} as const;
 
-/**
- * Constants for job categories.
- */
+export const JOB_STATUS = {
+  OPEN: 'open',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+} as const;
+
+export const APPLICATION_STATUS = {
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+  WITHDRAWN: 'withdrawn',
+} as const;
+
 export const JOB_CATEGORIES = [
   'Repairs',
   'Gardening',
@@ -18,4 +26,21 @@ export const JOB_CATEGORIES = [
   'Cleaning',
   'Moving',
   'Other',
-];
+] as const;
+
+export const SKILLS = [
+  'Plumbing',
+  'Electrical',
+  'Carpentry',
+  'Painting',
+  'Landscaping',
+  'Cleaning',
+  'Cooking',
+  'Driving',
+  'Teaching',
+  'Childcare',
+  'Pet Care',
+  'Computer Skills',
+  'Heavy Lifting',
+  'Customer Service',
+] as const;

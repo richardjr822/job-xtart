@@ -3,37 +3,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 80px); 
+  min-height: calc(100vh - 80px);
+  padding: 2rem;
   background-color: var(--page-bg);
 }
 
 .formBox {
   width: 100%;
-  max-width: 450px;
+  max-width: 480px;
   padding: 2.5rem;
-  margin: 2rem 0;
-  background-color: var(--nav-bg);
+  background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-body.dark .formBox {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
   color: var(--text-color);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .formGroup {
@@ -43,83 +47,136 @@ body.dark .formBox {
 }
 
 .label {
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.875rem;
   color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  padding: 0.875rem 1rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
   background-color: var(--page-bg);
   color: var(--text-color);
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all var(--transition);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:hover {
+  border-color: var(--border-hover);
 }
 
 .input:focus {
   outline: none;
-  border-color: #0070f3;
-  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-/* Role selection */
 .radioGroup {
   display: flex;
   gap: 1rem;
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
 }
 
 .radioLabel {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition: all var(--transition);
+  flex: 1;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.radioLabel:hover {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
 }
 
 .radioInput {
-  accent-color: #0070f3;
+  accent-color: var(--primary);
+  width: 18px;
+  height: 18px;
 }
 
+.radioInput:checked + span {
+  color: var(--primary);
+}
 
 .button {
-  padding: 0.75rem 1.5rem;
-  background-color: #0749AA;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 1rem;
+  transition: all var(--transition);
+  margin-top: 0.5rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .button:hover {
-  background-color: #52ADE5;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .link {
   text-align: center;
-  margin-top: 1.5rem;
+  margin-top: 1.75rem;
   font-size: 0.9rem;
+  color: var(--text-muted);
 }
 
 .link a {
-  color: #0070f3;
+  color: var(--primary);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  transition: opacity var(--transition);
 }
 
 .link a:hover {
-  text-decoration: underline;
+  opacity: 0.8;
 }
 
 .error {
-  color: #e53e3e;
-  font-size: 0.9rem;
+  color: var(--danger);
+  font-size: 0.85rem;
   margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.success {
+  padding: 1rem;
+  background-color: var(--success-light);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+  color: var(--success);
+  font-weight: 500;
   text-align: center;
 }
