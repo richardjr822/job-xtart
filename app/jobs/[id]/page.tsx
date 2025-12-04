@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Header from '@/components/3-organisms/Header';
-import Button from '@/components/1-atoms/Button';
+import JobActions from './JobActions';
 import { generateJobMetadata } from '@/lib/seo';
 import type { Job } from '@/interfaces';
 
@@ -176,22 +176,7 @@ export default async function JobDetailsPage({ params }: JobPageProps) {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    onClick={() => {}}
-                  >
-                    Apply Now
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    fullWidth
-                    onClick={() => {}}
-                  >
-                    Save for Later
-                  </Button>
-                </div>
+                <JobActions />
 
                 <p className="mt-4 text-xs text-center text-[var(--text-muted)]">
                   Sign in to apply for this job
