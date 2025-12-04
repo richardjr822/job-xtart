@@ -25,11 +25,18 @@ const AVATAR_OPTIONS = [
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { getUserById, updateUser, getReviewsByRevieweeId } = useData();
+  const { getUserById, updateUser, getReviewsByRevieweeId, getJobsByPosterId, jobs } = useData();
   const { showToast } = useToast();
   
   const currentUser = user ? getUserById(user.id) : null;
   const reviews = user ? getReviewsByRevieweeId(user.id) : [];
+  
+  // Calculate job stats dynamically
+  const jobStats = user ? (
+    user.role === 'poster' 
+      ? getJobsByPosterId(user.id).length  // Count jobs posted
+      : jobs.filter(j => j.assignedTo === user.id && j.status === 'completed').length  // Count completed jobs for seekers
+  ) : 0;
   
   const [form, setForm] = useState({
     username: '',
@@ -201,7 +208,7 @@ export default function ProfilePage() {
                     {user?.role === 'seeker' ? 'Jobs Completed' : 'Jobs Posted'}
                   </span>
                   <span className="text-lg font-bold text-[var(--success)]">
-                    {currentUser.profile.completedJobs || 0}
+                    {jobStats}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
