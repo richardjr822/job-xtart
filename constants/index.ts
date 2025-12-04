@@ -44,3 +44,23 @@ export const SKILLS = [
   'Heavy Lifting',
   'Customer Service',
 ] as const;
+
+export const BARANGAYS = [
+  'Asinan',
+  'Banicain',
+  'Barretto',
+  'East Bajac-Bajac',
+  'East Tapinac',
+  'Gordon Heights',
+  'Kalaklan',
+  'Mabayuan',
+  'New Cabalan',
+  'New Ilalim',
+  'New Kababae',
+  'New Kalalake',
+  'Pag-asa',
+  'Santa Rita',
+  'West Bajac-Bajac',
+  'West Tapinac',
+  'Old Cabalan',
+] as const;

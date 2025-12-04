@@ -17,16 +17,17 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const containerClass = fullWidth ? 'w-full' : '';
 
     const inputClasses = [
-      'w-full px-4 py-3 rounded-[var(--radius-md)]',
-      'bg-[var(--page-bg)] text-[var(--text-color)]',
-      'border-[1.5px] transition-all duration-200',
-      'placeholder:text-[var(--text-muted)]',
-      'focus:outline-none focus:ring-3',
+      'w-full px-4 py-3.5 rounded-xl',
+      'bg-[var(--card-bg)] text-[var(--text-color)]',
+      'border-2 transition-all duration-200 ease-out',
+      'placeholder:text-[var(--text-light)]',
+      'focus:outline-none focus:ring-4',
+      'text-[15px]',
       hasError
         ? 'border-[var(--danger)] focus:border-[var(--danger)] focus:ring-[var(--danger-light)]'
         : 'border-[var(--border-color)] hover:border-[var(--border-hover)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]',
-      leftIcon ? 'pl-11' : '',
-      rightIcon ? 'pr-11' : '',
+      leftIcon ? 'pl-12' : '',
+      rightIcon ? 'pr-12' : '',
       className,
     ].filter(Boolean).join(' ');
 
@@ -35,14 +36,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block mb-2 text-sm font-semibold text-[var(--text-color)]"
+            className="block mb-2.5 text-sm font-semibold text-[var(--text-color)] tracking-wide"
           >
             {label}
           </label>
         )}
-        <div className="relative">
+        <div className="relative group">
           {leftIcon && (
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] transition-colors group-focus-within:text-[var(--primary)]">
               {leftIcon}
             </div>
           )}
@@ -53,21 +54,21 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
               {rightIcon}
             </div>
           )}
         </div>
         {error && (
-          <p className="mt-1.5 text-sm text-[var(--danger)] flex items-center gap-1">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <p className="mt-2 text-sm text-[var(--danger)] flex items-center gap-1.5 font-medium animate-slideUp">
+            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
             {error}
           </p>
         )}
         {helperText && !error && (
-          <p className="mt-1.5 text-sm text-[var(--text-muted)]">{helperText}</p>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">{helperText}</p>
         )}
       </div>
     );

@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -14,17 +14,45 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white shadow-sm hover:shadow-md',
-  secondary: 'bg-[var(--primary-light)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white',
-  danger: 'bg-[var(--danger)] hover:opacity-90 text-white shadow-sm hover:shadow-md',
-  outline: 'border-2 border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary-light)]',
-  ghost: 'text-[var(--text-muted)] hover:text-[var(--text-color)] hover:bg-[var(--button-secondary-bg)]',
+  primary: `
+    bg-gradient-to-r from-[var(--primary)] to-[#3b82f6] 
+    hover:from-[var(--primary-hover)] hover:to-[var(--primary)]
+    text-white shadow-md hover:shadow-lg hover:shadow-[var(--primary)]/20
+    border border-transparent
+  `,
+  secondary: `
+    bg-[var(--primary-light)] text-[var(--primary)] 
+    hover:bg-[var(--primary)] hover:text-white
+    border border-[var(--primary)]/20 hover:border-transparent
+  `,
+  success: `
+    bg-gradient-to-r from-[var(--success)] to-emerald-400
+    hover:from-[var(--success-hover)] hover:to-[var(--success)]
+    text-white shadow-md hover:shadow-lg hover:shadow-[var(--success)]/20
+    border border-transparent
+  `,
+  danger: `
+    bg-gradient-to-r from-[var(--danger)] to-red-400
+    hover:from-[var(--danger-hover)] hover:to-[var(--danger)]
+    text-white shadow-md hover:shadow-lg hover:shadow-[var(--danger)]/20
+    border border-transparent
+  `,
+  outline: `
+    border-2 border-[var(--primary)] text-[var(--primary)] 
+    hover:bg-[var(--primary)] hover:text-white
+    bg-transparent
+  `,
+  ghost: `
+    text-[var(--text-muted)] hover:text-[var(--text-color)] 
+    hover:bg-[var(--button-secondary-bg)]
+    border border-transparent
+  `,
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm gap-1.5',
-  md: 'px-5 py-2.5 text-sm gap-2',
-  lg: 'px-6 py-3 text-base gap-2.5',
+  sm: 'px-3.5 py-2 text-xs font-semibold gap-1.5 rounded-lg',
+  md: 'px-5 py-2.5 text-sm font-semibold gap-2 rounded-xl',
+  lg: 'px-7 py-3.5 text-base font-semibold gap-2.5 rounded-xl',
 };
 
 export default function Button({
@@ -41,11 +69,11 @@ export default function Button({
 }: ButtonProps) {
   const baseClasses = [
     'inline-flex items-center justify-center',
-    'font-semibold rounded-[var(--radius-md)]',
-    'transition-all duration-200',
-    'focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2',
-    'disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none',
-    'active:scale-[0.98]',
+    'tracking-wide whitespace-nowrap',
+    'transition-all duration-200 ease-out',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2',
+    'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+    'active:scale-[0.97]',
   ].join(' ');
 
   const widthClass = fullWidth ? 'w-full' : '';

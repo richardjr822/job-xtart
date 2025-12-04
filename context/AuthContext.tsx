@@ -2,12 +2,15 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { onAuthChange, logOut } from '@/lib/firebase';
+import { usersService } from '@/lib/firebase';
 import type { UserRole } from '@/interfaces';
 
 type AuthUser = {
   id: string;
   email: string;
   role: UserRole;
+  username?: string;
 };
 
 type AuthState = {
@@ -46,11 +49,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const checkAuth = useCallback(async () => {
-    // Frontend-only: no backend auth check
     setState(prev => ({ ...prev, isLoading: false }));
   }, []);
 
   const logout = useCallback(async () => {
+    try {
+      await logOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     setUser(null);
     router.push('/auth/login');
   }, [setUser, router]);
@@ -67,8 +74,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        const userData = await usersService.get(firebaseUser.uid);
+        if (userData) {
+          setUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            role: userData.role,
+            username: userData.username,
+          });
+        } else {
+          setState(prev => ({ ...prev, isLoading: false }));
+        }
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [setUser]);
 
   const value: AuthContextType = {
     ...state,

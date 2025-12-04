@@ -4,31 +4,51 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { USER_ROLES } from '@/constants';
+import { signUp, usersService, notificationsService } from '@/lib/firebase';
 import Header from '@/components/3-organisms/Header';
 import Button from '@/components/1-atoms/Button';
 import Input from '@/components/1-atoms/Input';
 import styles from '../../forms.module.css';
+import type { UserRole } from '@/interfaces';
 
 type FormData = {
   email: string;
+  username: string;
   password: string;
   confirmPassword: string;
   role: string;
-  phone: string;
 };
 
-type ApiError = {
-  status?: number;
-  message?: string;
+const PASSWORD_REQUIREMENTS = {
+  minLength: 8,
+  hasUppercase: /[A-Z]/,
+  hasNumber: /[0-9]/,
+  hasSpecial: /[!@#$%^&*(),.?":{}|<>]/,
 };
+
+function validatePassword(password: string): string | null {
+  if (password.length < PASSWORD_REQUIREMENTS.minLength) {
+    return `Password must be at least ${PASSWORD_REQUIREMENTS.minLength} characters`;
+  }
+  if (!PASSWORD_REQUIREMENTS.hasUppercase.test(password)) {
+    return 'Password must contain at least 1 uppercase letter';
+  }
+  if (!PASSWORD_REQUIREMENTS.hasNumber.test(password)) {
+    return 'Password must contain at least 1 number';
+  }
+  if (!PASSWORD_REQUIREMENTS.hasSpecial.test(password)) {
+    return 'Password must contain at least 1 special character (!@#$%^&*...)';
+  }
+  return null;
+}
 
 export default function SignUpPage() {
   const [form, setForm] = useState<FormData>({
     email: '',
+    username: '',
     password: '',
     confirmPassword: '',
     role: USER_ROLES.SEEKER,
-    phone: '',
   });
 
   const [error, setError] = useState('');
@@ -45,28 +65,75 @@ export default function SignUpPage() {
     setForm((prev) => ({ ...prev, role }));
   };
 
+  const passwordError = validatePassword(form.password);
+  const passwordChecks = {
+    length: form.password.length >= PASSWORD_REQUIREMENTS.minLength,
+    uppercase: PASSWORD_REQUIREMENTS.hasUppercase.test(form.password),
+    number: PASSWORD_REQUIREMENTS.hasNumber.test(form.password),
+    special: PASSWORD_REQUIREMENTS.hasSpecial.test(form.password),
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (!form.username.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
 
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    // Frontend-only: simulate registration
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      const firebaseUser = await signUp(form.email, form.password, form.username);
+
+      await usersService.create(firebaseUser.uid, {
+        username: form.username,
+        email: form.email,
+        role: form.role as UserRole,
+        profile: {
+          ...(form.role === 'seeker' && { skills: [] }),
+          completedJobs: 0,
+          rating: 0,
+        },
+        createdAt: new Date(),
+      });
+
+      await notificationsService.create({
+        userId: firebaseUser.uid,
+        type: 'credentials',
+        title: 'Welcome to Job Start!',
+        message: `Your account has been created. Email: ${form.email}`,
+      });
+
+      setSuccess('Account created successfully!');
+      const redirectPath = form.role === 'poster' ? '/dashboard/poster' : '/dashboard/seeker';
+      setTimeout(() => router.push(redirectPath), 1000);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create account';
+      if (errorMessage.includes('email-already-in-use')) {
+        setError('This email is already registered');
+      } else if (errorMessage.includes('invalid-email')) {
+        setError('Invalid email address');
+      } else if (errorMessage.includes('weak-password')) {
+        setError('Password is too weak');
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
       setIsLoading(false);
-      setSuccess('Account created successfully! Redirecting...');
-      setTimeout(() => router.push('/auth/login'), 1500);
-    }, 500);
+    }
   };
 
   return (
@@ -111,6 +178,17 @@ export default function SignUpPage() {
             </div>
 
             <Input
+              label="Full Name"
+              type="text"
+              name="username"
+              placeholder="Your full name"
+              value={form.username}
+              onChange={handleChange}
+              required
+              fullWidth
+            />
+
+            <Input
               label="Email Address"
               type="email"
               name="email"
@@ -126,7 +204,7 @@ export default function SignUpPage() {
                 label="Password"
                 type="password"
                 name="password"
-                placeholder="Min. 6 characters"
+                placeholder="Min. 8 characters"
                 value={form.password}
                 onChange={handleChange}
                 required
@@ -145,15 +223,25 @@ export default function SignUpPage() {
               />
             </div>
 
-            <Input
-              label="Phone (Optional)"
-              type="tel"
-              name="phone"
-              placeholder="09123456789"
-              value={form.phone}
-              onChange={handleChange}
-              fullWidth
-            />
+            {form.password && (
+              <div className="p-3 bg-[var(--page-bg)] rounded-xl border border-[var(--border-color)]">
+                <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Password requirements:</p>
+                <div className="grid grid-cols-2 gap-1 text-xs">
+                  <span className={passwordChecks.length ? 'text-emerald-500' : 'text-[var(--text-muted)]'}>
+                    {passwordChecks.length ? '✓' : '○'} 8+ characters
+                  </span>
+                  <span className={passwordChecks.uppercase ? 'text-emerald-500' : 'text-[var(--text-muted)]'}>
+                    {passwordChecks.uppercase ? '✓' : '○'} 1 uppercase
+                  </span>
+                  <span className={passwordChecks.number ? 'text-emerald-500' : 'text-[var(--text-muted)]'}>
+                    {passwordChecks.number ? '✓' : '○'} 1 number
+                  </span>
+                  <span className={passwordChecks.special ? 'text-emerald-500' : 'text-[var(--text-muted)]'}>
+                    {passwordChecks.special ? '✓' : '○'} 1 special char
+                  </span>
+                </div>
+              </div>
+            )}
 
             {error && (
               <div className="p-3 bg-[var(--danger-light)] border border-[var(--danger)] rounded-[var(--radius-md)] text-[var(--danger)] text-sm">

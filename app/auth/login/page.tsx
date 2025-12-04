@@ -3,7 +3,7 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/context';
+import { signIn, usersService } from '@/lib/firebase';
 import Header from '@/components/3-organisms/Header';
 import Button from '@/components/1-atoms/Button';
 import Input from '@/components/1-atoms/Input';
@@ -14,24 +14,10 @@ type LoginForm = {
   password: string;
 };
 
-type LoginResponse = {
-  user: {
-    id: string;
-    email: string;
-    role: 'seeker' | 'poster';
-  };
-};
-
-type ApiError = {
-  status?: number;
-  message?: string;
-};
-
 export default function LoginPage() {
   const [form, setForm] = useState<LoginForm>({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
@@ -53,17 +39,29 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    // Frontend-only: simulate login
-    setTimeout(() => {
-      const mockUser = {
-        id: 'user-1',
-        email: form.email,
-        role: 'seeker' as const,
-      };
-      setUser(mockUser);
+    try {
+      const firebaseUser = await signIn(form.email, form.password);
+      const userData = await usersService.get(firebaseUser.uid);
+
+      if (userData) {
+        router.push(getRedirectPath(userData.role));
+      } else {
+        setError('User data not found. Please contact support.');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
+      if (errorMessage.includes('user-not-found') || errorMessage.includes('wrong-password') || errorMessage.includes('invalid-credential')) {
+        setError('Invalid email or password');
+      } else if (errorMessage.includes('invalid-email')) {
+        setError('Invalid email address');
+      } else if (errorMessage.includes('too-many-requests')) {
+        setError('Too many attempts. Please try again later.');
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
       setIsLoading(false);
-      router.push(getRedirectPath(mockUser.role));
-    }, 500);
+    }
   };
 
   return (

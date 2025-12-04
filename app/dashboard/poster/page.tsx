@@ -1,17 +1,12 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { JOB_CATEGORIES } from '@/constants';
+import { JOB_CATEGORIES, BARANGAYS } from '@/constants';
+import { useAuth, useData, useToast } from '@/context';
 import type { JobCategory } from '@/interfaces';
 import Button from '@/components/1-atoms/Button';
 import Input from '@/components/1-atoms/Input';
 import styles from '../dashboard.module.css';
-
-const CheckIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <path d="M20 6L9 17l-5-5" />
-  </svg>
-);
 
 const selectStyles: React.CSSProperties = {
   width: '100%',
@@ -40,33 +35,71 @@ const textareaStyles: React.CSSProperties = {
 };
 
 export default function PosterDashboard() {
+  const { user } = useAuth();
+  const { addJob } = useData();
+  const { showToast } = useToast();
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
     description: '',
     category: '' as JobCategory | '',
-    location: '',
+    barangay: '',
+    streetAddress: '',
     rate: '',
   });
 
+  const handleRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setForm({ ...form, rate: value });
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSuccess(false);
 
     if (!form.category) {
-      alert('Please select a category');
+      showToast('Please select a category', 'warning');
       return;
     }
 
-    // Frontend-only: simulate job creation
+    if (!form.barangay) {
+      showToast('Please select a barangay', 'warning');
+      return;
+    }
+
+    if (!user) {
+      showToast('Please log in to post a job', 'error');
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const location = form.streetAddress && form.barangay 
+        ? `${form.streetAddress}, ${form.barangay}` 
+        : form.barangay;
+
+      await addJob({
+        posterId: user.id,
+        title: form.title,
+        description: form.description,
+        category: form.category as JobCategory,
+        location,
+        rate: parseFloat(form.rate),
+        status: 'open',
+        applicants: [],
+        createdAt: new Date(),
+      });
+
+      showToast('Job posted successfully!', 'success');
+      setForm({ title: '', description: '', category: '', barangay: '', streetAddress: '', rate: '' });
+    } catch (error) {
+      console.error('Failed to post job:', error);
+      showToast('Failed to post job', 'error');
+    } finally {
       setIsLoading(false);
-      setSuccess(true);
-      setForm({ title: '', description: '', category: '', location: '', rate: '' });
-    }, 500);
+    }
   };
 
   return (
@@ -77,13 +110,6 @@ export default function PosterDashboard() {
       </div>
 
       <div className={`${styles.card} max-w-2xl`}>
-        {success && (
-          <div className="flex items-center gap-3 p-4 mb-6 bg-[var(--success-light)] border border-[var(--success)] rounded-[var(--radius-md)] text-[var(--success)]">
-            <CheckIcon />
-            <span className="font-medium">Job posted successfully! It's now visible to seekers.</span>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input
             label="Job Title"
@@ -126,25 +152,39 @@ export default function PosterDashboard() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-2 text-sm font-semibold text-[var(--text-color)]">Barangay</label>
+              <select
+                value={form.barangay}
+                onChange={(e) => setForm({ ...form, barangay: e.target.value })}
+                required
+                style={selectStyles}
+              >
+                <option value="">Select Barangay</option>
+                {BARANGAYS.map((brgy) => (
+                  <option key={brgy} value={brgy}>{brgy}</option>
+                ))}
+              </select>
+            </div>
             <Input
-              label="Location"
-              placeholder="e.g., Makati City"
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              required
-              fullWidth
-            />
-
-            <Input
-              label="Hourly Rate (PHP)"
-              type="number"
-              placeholder="e.g., 200"
-              value={form.rate}
-              onChange={(e) => setForm({ ...form, rate: e.target.value })}
-              required
+              label="House/Street No."
+              placeholder="e.g., 123 Main Street"
+              value={form.streetAddress}
+              onChange={(e) => setForm({ ...form, streetAddress: e.target.value })}
               fullWidth
             />
           </div>
+
+          <Input
+            label="Hourly Rate (₱)"
+            type="text"
+            inputMode="numeric"
+            placeholder="e.g., 200"
+            value={form.rate}
+            onChange={handleRateChange}
+            required
+            fullWidth
+          />
 
           <div className="pt-2">
             <Button type="submit" variant="primary" fullWidth size="lg" isLoading={isLoading}>

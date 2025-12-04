@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context';
+import { useAuth, useTheme } from '@/context';
 import Logo from '../1-atoms/Logo';
 import NavLinks, { NavLink } from '../2-molecules/NavLinks';
 import Button from '../1-atoms/Button';
@@ -21,6 +21,21 @@ const SunIcon = () => (
   </svg>
 );
 
+const MenuIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
 const PUBLIC_NAV_LINKS: NavLink[] = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/#about-section' },
@@ -30,34 +45,22 @@ const PUBLIC_NAV_LINKS: NavLink[] = [
 export default function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
-  
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const savedMode = localStorage.getItem('darkMode');
-    if (savedMode !== null) {
-      setIsDarkMode(JSON.parse(savedMode));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    document.documentElement.classList.toggle('dark', isDarkMode);
-    document.body.classList.toggle('dark', isDarkMode);
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode, mounted]);
-
-  const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+  const { theme, toggleTheme } = useTheme();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
+    setMobileMenuOpen(false);
   };
 
   const getDashboardPath = () => {
     if (!user) return '/dashboard';
     return user.role === 'poster' ? '/dashboard/poster' : '/dashboard/seeker';
+  };
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -68,13 +71,14 @@ export default function Header() {
 
       <NavLinks links={PUBLIC_NAV_LINKS} orientation="horizontal" className={styles.navLinks} />
 
+      {/* Desktop Actions */}
       <div className={styles.actions}>
         <button
-          onClick={toggleDarkMode}
+          onClick={toggleTheme}
           className={styles.themeToggle}
           aria-label="Toggle dark mode"
         >
-          {mounted && (isDarkMode ? <SunIcon /> : <MoonIcon />)}
+          {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
         </button>
 
         {isAuthenticated ? (
@@ -113,6 +117,61 @@ export default function Header() {
           </>
         )}
       </div>
+
+      {/* Mobile Actions */}
+      <div className={styles.mobileActions}>
+        <button
+          onClick={toggleTheme}
+          className={styles.themeToggle}
+          aria-label="Toggle dark mode"
+        >
+          {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+        </button>
+        <button
+          className={styles.hamburger}
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className={styles.mobileMenu}>
+          {isAuthenticated ? (
+            <>
+              <button
+                className={styles.mobileMenuItem}
+                onClick={() => handleNavigation(getDashboardPath())}
+              >
+                Dashboard
+              </button>
+              <button
+                className={styles.mobileMenuItem}
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={styles.mobileMenuItem}
+                onClick={() => handleNavigation('/auth/login')}
+              >
+                Login
+              </button>
+              <button
+                className={`${styles.mobileMenuItem} ${styles.mobileMenuPrimary}`}
+                onClick={() => handleNavigation('/auth/signup')}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </header>
   );
 }

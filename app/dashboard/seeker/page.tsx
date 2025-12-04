@@ -1,19 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { JOB_CATEGORIES } from '@/constants';
+import { useAuth, useData } from '@/context';
 import Button from '@/components/1-atoms/Button';
 import Input from '@/components/1-atoms/Input';
 import styles from '../dashboard.module.css';
-import type { Job } from '@/interfaces';
-
-// Mock data for frontend-only
-const MOCK_JOBS: Job[] = [
-  { _id: '1', title: 'Garden Cleaning', description: 'Help maintain a beautiful garden. Weeding, trimming, and general cleanup needed.', category: 'Gardening', location: 'Makati City', rate: 250, status: 'open', posterId: 'p1', createdAt: new Date() },
-  { _id: '2', title: 'House Painting', description: 'Interior painting for a 2-bedroom apartment. Paint and materials provided.', category: 'Repairs', location: 'Quezon City', rate: 300, status: 'open', posterId: 'p2', createdAt: new Date() },
-  { _id: '3', title: 'Errands Helper', description: 'Looking for someone to help with various daily errands.', category: 'Errands', location: 'Taguig', rate: 200, status: 'open', posterId: 'p3', createdAt: new Date() },
-  { _id: '4', title: 'Grocery Delivery', description: 'Need help with weekly grocery shopping and delivery.', category: 'Delivery', location: 'Pasig City', rate: 150, status: 'open', posterId: 'p4', createdAt: new Date() },
-];
+import type { JobCategory } from '@/interfaces';
 
 const SearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -29,47 +22,88 @@ const LocationIcon = () => (
   </svg>
 );
 
+const CheckIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
+
 const selectStyles: React.CSSProperties = {
-  padding: '0.75rem 1rem',
+  padding: '0.625rem 0.75rem',
   borderRadius: 'var(--radius-md)',
   border: '1.5px solid var(--border-color)',
   backgroundColor: 'var(--page-bg)',
   color: 'var(--text-color)',
-  minWidth: '180px',
-  fontSize: '0.9375rem',
+  width: '100%',
+  fontSize: '0.875rem',
   cursor: 'pointer',
   transition: 'all 0.2s',
 };
 
 export default function SeekerDashboard() {
+  const { user } = useAuth();
+  const { getOpenJobs, addApplication, getApplicationsBySeekerId, addNotification, getJobById, getUserById } = useData();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [jobs, setJobs] = useState<Job[]>(MOCK_JOBS);
-  const [isLoading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [applyingTo, setApplyingTo] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
-  const handleSearch = () => {
-    // Frontend-only: filter mock data locally
-    let filtered = MOCK_JOBS;
+  const openJobs = getOpenJobs();
+  const myApplications = user ? getApplicationsBySeekerId(user.id) : [];
+  const appliedJobIds = myApplications.map(a => a.jobId);
+
+  const filteredJobs = useMemo(() => {
+    let filtered = openJobs;
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(job => 
-        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        job.description.toLowerCase().includes(searchQuery.toLowerCase())
+        job.title.toLowerCase().includes(query) ||
+        job.description.toLowerCase().includes(query) ||
+        job.location.toLowerCase().includes(query)
       );
     }
     if (selectedCategory) {
       filtered = filtered.filter(job => job.category === selectedCategory);
     }
-    setJobs(filtered);
+    return filtered;
+  }, [openJobs, searchQuery, selectedCategory]);
+
+  const handleApplyClick = (jobId: string) => {
+    setApplyingTo(jobId);
+    setMessage('');
+    setShowModal(true);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch();
+  const handleSubmitApplication = async () => {
+    if (!user || !applyingTo) return;
+
+    const job = getJobById(applyingTo);
+    if (!job) return;
+
+    await addApplication({
+      jobId: applyingTo,
+      seekerId: user.id,
+      status: 'pending',
+      message: message.trim() || '',
+      createdAt: new Date(),
+    });
+
+    await addNotification({
+      userId: job.posterId,
+      type: 'application_received',
+      title: 'New Application Received',
+      message: `${user.username || user.email} applied for "${job.title}"`,
+      data: { jobId: job._id, seekerId: user.id },
+    });
+
+    setShowModal(false);
+    setApplyingTo(null);
+    setMessage('');
   };
 
-  const handleApply = (jobId: string) => {
-    alert(`Applied to job ${jobId}`);
-  };
+  const applyingJob = applyingTo ? getJobById(applyingTo) : null;
 
   return (
     <div>
@@ -78,48 +112,31 @@ export default function SeekerDashboard() {
         <p className={styles.pageDescription}>Find flexible work opportunities in your area</p>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-8 p-4 bg-[var(--card-bg)] rounded-[var(--radius-lg)] border border-[var(--border-color)]">
-        <div className="flex-1 min-w-[240px]">
+      <div className="flex flex-col gap-3 mb-4 p-3 bg-[var(--card-bg)] rounded-[var(--radius-lg)] border border-[var(--border-color)] sm:mb-6 sm:p-4 md:flex-row md:items-center">
+        <div className="flex-1">
           <Input
-            placeholder="Search by title or keyword..."
+            placeholder="Search jobs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
             leftIcon={<SearchIcon />}
             fullWidth
           />
         </div>
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          style={selectStyles}
-        >
-          <option value="">All Categories</option>
-          {JOB_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <Button onClick={handleSearch} variant="primary" size="lg">
-          Search Jobs
-        </Button>
+        <div className="sm:w-48 md:w-44 lg:w-52">
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={selectStyles}
+          >
+            <option value="">All Categories</option>
+            {JOB_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-[var(--primary-light)] border-t-[var(--primary)] rounded-full animate-spin" />
-            <p className="text-[var(--text-muted)]">Finding opportunities...</p>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-[var(--danger-light)] border border-[var(--danger)] rounded-[var(--radius-md)] text-[var(--danger)] text-center">
-          {error}
-        </div>
-      )}
-
-      {!isLoading && jobs.length === 0 && (
+      {filteredJobs.length === 0 && (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>
             <SearchIcon />
@@ -130,37 +147,90 @@ export default function SeekerDashboard() {
       )}
 
       <div className={styles.grid}>
-        {jobs.map((job) => (
-          <article key={job._id} className={styles.card}>
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-[var(--text-color)] mb-1 truncate">
-                  {job.title}
-                </h3>
-                <span className="inline-block px-2.5 py-0.5 bg-[var(--primary-light)] text-[var(--primary)] text-xs font-semibold rounded-full">
-                  {job.category}
-                </span>
+        {filteredJobs.map((job) => {
+          const hasApplied = appliedJobIds.includes(job._id);
+          const poster = getUserById(job.posterId);
+          
+          return (
+            <article key={job._id} className={styles.card}>
+              <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:justify-between sm:items-start">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold text-[var(--text-color)] mb-1 sm:text-lg line-clamp-1">
+                    {job.title}
+                  </h3>
+                  <span className="inline-block px-2 py-0.5 bg-[var(--primary-light)] text-[var(--primary)] text-xs font-semibold rounded-full">
+                    {job.category}
+                  </span>
+                </div>
+                <div className="self-start px-2.5 py-1 bg-[var(--success-light)] text-[var(--success)] rounded-full text-sm font-bold whitespace-nowrap sm:ml-2">
+                  ₱{job.rate}/hr
+                </div>
               </div>
-              <div className="ml-3 px-3 py-1.5 bg-[var(--success-light)] text-[var(--success)] rounded-full text-sm font-bold whitespace-nowrap">
-                ₱{job.rate}/hr
+
+              <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-3 line-clamp-2">
+                {job.description}
+              </p>
+
+              <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mb-1.5 sm:text-sm">
+                <LocationIcon />
+                <span>{job.location}</span>
               </div>
-            </div>
 
-            <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-4 line-clamp-2">
-              {job.description}
-            </p>
+              {poster && (
+                <p className="text-xs text-[var(--text-muted)] mb-3">
+                  Posted by {poster.username}
+                </p>
+              )}
 
-            <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] mb-5">
-              <LocationIcon />
-              <span>{job.location}</span>
-            </div>
-
-            <Button onClick={() => handleApply(job._id)} variant="primary" fullWidth>
-              Quick Apply
-            </Button>
-          </article>
-        ))}
+              {hasApplied ? (
+                <div className="flex items-center justify-center gap-2 py-2 bg-[var(--success-light)] text-[var(--success)] rounded-[var(--radius-md)] font-medium text-sm">
+                  <CheckIcon />
+                  Applied
+                </div>
+              ) : (
+                <Button onClick={() => handleApplyClick(job._id)} variant="primary" fullWidth size="sm">
+                  Quick Apply
+                </Button>
+              )}
+            </article>
+          );
+        })}
       </div>
+
+      {showModal && applyingJob && (
+        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 sm:items-center sm:p-4">
+          <div className="bg-[var(--card-bg)] rounded-t-[var(--radius-lg)] p-4 w-full max-h-[85vh] overflow-y-auto shadow-xl sm:rounded-[var(--radius-lg)] sm:max-w-md sm:p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-color)] mb-1.5 sm:text-xl sm:mb-2">
+              Apply for {applyingJob.title}
+            </h2>
+            <p className="text-[var(--text-muted)] text-xs mb-3 sm:text-sm sm:mb-4">
+              {applyingJob.category} • ₱{applyingJob.rate}/hr • {applyingJob.location}
+            </p>
+            
+            <div className="mb-3 sm:mb-4">
+              <label className="block mb-1.5 text-sm font-semibold text-[var(--text-color)] sm:mb-2">
+                Message (Optional)
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Tell the employer why you're a good fit..."
+                rows={3}
+                className="w-full p-2.5 rounded-[var(--radius-md)] border border-[var(--border-color)] bg-[var(--page-bg)] text-[var(--text-color)] text-sm resize-none focus:outline-none focus:border-[var(--primary)] sm:p-3 sm:rows-4"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+              <Button variant="ghost" onClick={() => setShowModal(false)} fullWidth>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleSubmitApplication} fullWidth>
+                Submit
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

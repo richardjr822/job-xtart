@@ -1,11 +1,30 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/context';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth, useData } from '@/context';
 import Logo from '@/components/1-atoms/Logo';
+import Avatar from '@/components/1-atoms/Avatar';
+import { ConfirmModal } from '@/components/1-atoms/Modal';
+import ThemeToggle from '@/components/1-atoms/ThemeToggle';
+import NotificationCenter from '@/components/2-molecules/NotificationCenter';
 import styles from './dashboard.module.css';
+
+const MenuIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -70,6 +89,12 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const ReviewsIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
 type NavLink = {
   href: string;
   label: string;
@@ -81,17 +106,38 @@ const SEEKER_NAV_LINKS: NavLink[] = [
   { href: '/dashboard/seeker', label: 'Browse Jobs', icon: <BrowseIcon />, exact: true },
   { href: '/dashboard/seeker/applications', label: 'Applications', icon: <ApplicationsIcon /> },
   { href: '/dashboard/seeker/active', label: 'Active Jobs', icon: <ActiveIcon /> },
+  { href: '/dashboard/reviews', label: 'My Reviews', icon: <ReviewsIcon /> },
 ];
 
 const POSTER_NAV_LINKS: NavLink[] = [
   { href: '/dashboard/poster', label: 'Post Job', icon: <PostIcon />, exact: true },
   { href: '/dashboard/poster/listings', label: 'My Listings', icon: <ListingsIcon /> },
   { href: '/dashboard/poster/applicants', label: 'Applicants', icon: <ApplicantsIcon /> },
+  { href: '/dashboard/reviews', label: 'My Reviews', icon: <ReviewsIcon /> },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout, isLoading } = useAuth();
+  const { getUserById } = useData();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const currentUser = user ? getUserById(user.id) : null;
+  const isCompleteProfilePage = pathname === '/dashboard/complete-profile';
+
+  useEffect(() => {
+    if (!isLoading && currentUser && !currentUser.profileCompleted && !isCompleteProfilePage) {
+      router.replace('/dashboard/complete-profile');
+    }
+  }, [currentUser, isLoading, isCompleteProfilePage, router]);
+
+  const handleLogout = async () => {
+    await logout();
+    setMobileMenuOpen(false);
+    setShowLogoutModal(false);
+  };
 
   if (isLoading) {
     return (
@@ -101,6 +147,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
+  if (isCompleteProfilePage) {
+    return <>{children}</>;
+  }
+
   const isSeeker = user?.role === 'seeker';
   const navLinks = isSeeker ? SEEKER_NAV_LINKS : POSTER_NAV_LINKS;
   const dashboardHome = isSeeker ? '/dashboard/seeker' : '/dashboard/poster';
@@ -108,21 +158,61 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
 
-  const handleLogout = async () => {
-    await logout();
+  const handleNavClick = () => {
+    setMobileMenuOpen(false);
   };
 
   return (
     <div className={styles.container}>
-      <aside className={styles.sidebar}>
+      <div className={styles.mobileHeader}>
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className={styles.menuButton}
+          aria-label="Open menu"
+        >
+          <MenuIcon />
+        </button>
+        <Logo href={dashboardHome} size={24} showText />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <NotificationCenter />
+        </div>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className={styles.mobileOverlay} onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      <aside className={`${styles.sidebar} ${mobileMenuOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
-          <Logo href={dashboardHome} size={28} showText />
+          <div className="flex items-center justify-between w-full">
+            <Logo href={dashboardHome} size={28} showText />
+            <div className="flex items-center gap-2">
+              <NotificationCenter />
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className={styles.closeButton}
+                aria-label="Close menu"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="px-4 py-3">
-          <div className="px-3 py-2 rounded-[var(--radius-md)] bg-[var(--primary-light)]">
-            <p className="text-xs font-medium text-[var(--text-muted)]">Logged in as</p>
-            <p className="text-sm font-semibold text-[var(--primary)] capitalize">{user?.role}</p>
+        <div className={styles.userInfo}>
+          <div className="flex items-center gap-3">
+            <Avatar 
+              src={currentUser?.profile?.avatar} 
+              name={currentUser?.username || user?.email} 
+              size="md"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[var(--text-color)] truncate">
+                {currentUser?.username || 'User'}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] capitalize">{user?.role}</p>
+            </div>
           </div>
         </div>
 
@@ -131,6 +221,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Link
               key={link.href}
               href={link.href}
+              onClick={handleNavClick}
               className={`${styles.navLink} ${isActive(link.href, link.exact) ? styles.active : ''}`}
             >
               {link.icon}
@@ -140,12 +231,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <Link href="/profile" className={styles.navLink}>
+          <ThemeToggle showLabel className={`${styles.navLink} w-full`} />
+          <Link href="/dashboard/profile" onClick={handleNavClick} className={styles.navLink}>
             <ProfileIcon />
             <span>Profile</span>
           </Link>
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutModal(true)}
             className={`${styles.navLink} w-full text-[var(--danger)] hover:bg-[var(--danger-light)]`}
           >
             <LogoutIcon />
@@ -155,6 +247,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       <main className={styles.main}>{children}</main>
+
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        variant="danger"
+      />
     </div>
   );
 }

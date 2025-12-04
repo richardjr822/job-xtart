@@ -6,7 +6,7 @@ export interface UserProfile {
   hourlyRate?: number;
   location?: string;
   phone?: string;
-  photo?: string;
+  avatar?: string;
   rating?: number;
   completedJobs?: number;
 }
@@ -17,5 +17,6 @@ export interface User {
   email: string;
   role: UserRole;
   profile: UserProfile;
+  profileCompleted?: boolean;
   createdAt: Date;
 }
