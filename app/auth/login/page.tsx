@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, ChangeEvent, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, usersService } from '@/lib/firebase';
@@ -9,13 +9,13 @@ import Button from '@/components/1-atoms/Button';
 import Input from '@/components/1-atoms/Input';
 import styles from '../../forms.module.css';
 
-type LoginForm = {
+type LoginFormData = {
   email: string;
   password: string;
 };
 
-export default function LoginPage() {
-  const [form, setForm] = useState<LoginForm>({ email: '', password: '' });
+function LoginFormContent() {
+  const [form, setForm] = useState<LoginFormData>({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -112,5 +112,17 @@ export default function LoginPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[var(--page-bg)]">
+        <div className="w-8 h-8 border-4 border-[var(--primary-light)] border-t-[var(--primary)] rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginFormContent />
+    </Suspense>
   );
 }
